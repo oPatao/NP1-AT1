@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, StatusBar, TextInput, TouchableOpacity, Alert,FlatList, Switch, ListRenderItem } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, StatusBar, TextInput, TouchableOpacity, Alert, FlatList, Switch, ListRenderItem, Modal } from 'react-native';
 
 type Tarefa = {
   id: string;
@@ -8,15 +8,18 @@ type Tarefa = {
 };
 
 export default function App() {
-   const [tarefa, setTarefa] = useState<string>('');
-   const [listaTarefas, setListaTarefas] = useState<Tarefa[]>([
+  const [tarefa, setTarefa] = useState<string>('');
+  const [listaTarefas, setListaTarefas] = useState<Tarefa[]>([
     { id: '1', texto: 'Estudar TypeScript', concluida: true },
     { id: '2', texto: 'Fazer compras', concluida: false },
-    { id: '3', texto: 'Ler um livro', concluida: false },]);
-   
-   const handleAdicionarTarefa = () => {
+    { id: '3', texto: 'Ler um livro', concluida: false },
+  ]);
+  const [tarefaSelecionada, setTarefaSelecionada] = useState<Tarefa | null>(null);
+  const [modalVisivel, setModalVisivel] = useState<boolean>(false);
+
+  const handleAdicionarTarefa = () => {
     if (tarefa.trim() === '') {
-      Alert.alert("Erro", "Por favor, digite uma tarefa antes de adicionar.");
+      Alert.alert("Erro", "Por favor, digite uma tarefa.");
       return;
     }
     const novaTarefa: Tarefa = {
@@ -26,27 +29,36 @@ export default function App() {
     };
     setListaTarefas([novaTarefa, ...listaTarefas]);
     setTarefa('');
+  };
 
-    const toggleConcluida = (id: string) => {
-    setListaTarefas(listaTarefas.map(item => 
+  const toggleConcluida = (id: string) => {
+    setListaTarefas(listaTarefas.map(item =>
       item.id === id ? { ...item, concluida: !item.concluida } : item
     ));
-
   };
+
+  const abrirModal = (tarefa: Tarefa) => {
+    setTarefaSelecionada(tarefa);
+    setModalVisivel(true);
+  };
+
   const renderItem: ListRenderItem<Tarefa> = ({ item }) => (
-    <View style={styles.itemLista}>
-      <Text style={[styles.itemTexto, item.concluida && styles.itemTextoConcluido]}>
-        {item.texto}
-      </Text>
-      <Switch
-        trackColor={{ false: "#767577", true: "#81b0ff" }}
-        thumbColor={item.concluida ? "#3498db" : "#f4f3f4"}
-        onValueChange={() => toggleConcluida(item.id)}
-        value={item.concluida}
-      />
-    </View>
+    <TouchableOpacity onPress={() => abrirModal(item)}>
+      <View style={styles.itemLista}>
+        <Text style={[styles.itemTexto, item.concluida && styles.itemTextoConcluido]}>
+          {item.texto}
+        </Text>
+        <Switch
+          trackColor={{ false: "#767577", true: "#81b0ff" }}
+          thumbColor={item.concluida ? "#3498db" : "#f4f3f4"}
+          onValueChange={() => toggleConcluida(item.id)}
+          value={item.concluida}
+        />
+      </View>
+    </TouchableOpacity>
   );
-   return (
+
+  return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#2c3e50" />
       <View style={styles.header}>
@@ -58,18 +70,43 @@ export default function App() {
           placeholder="Digite uma nova tarefa..."
           placeholderTextColor="#95a5a6"
           value={tarefa}
-          onChangeText={setTarefa} 
+          onChangeText={setTarefa}
         />
         <TouchableOpacity style={styles.button} onPress={handleAdicionarTarefa}>
           <Text style={styles.buttonText}>Adicionar</Text>
         </TouchableOpacity>
-        <FlatList
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisivel}
+        onRequestClose={() => setModalVisivel(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>
+              {tarefaSelecionada?.texto}
+            </Text>
+            <Text>
+              Status: {tarefaSelecionada?.concluida ? 'Concluída' : 'Pendente'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisivel(false)}
+            >
+              <Text style={styles.buttonText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <FlatList
         data={listaTarefas}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma tarefa na lista!</Text>}
       />
-      </View>
     </SafeAreaView>
   );
 }
@@ -134,5 +171,36 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontSize: 18,
     color: '#7f8c8d',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  buttonClose: {
+    backgroundColor: "#e74c3c",
+    marginTop: 20,
   },
 });
